@@ -3,6 +3,7 @@ package com.example
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import kotlinx.serialization.Serializable
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -23,12 +24,10 @@ fun Routing.socket() {
             }
 
             try {
-                for (frame in incoming) {
-                    frame as? Frame.Text ?: continue
-                    val receivedText = frame.readText()
-                    val textWithUsername = "[${thisConnection.name}]: $receivedText"
+                while (true) {
+                    val customer = receiveDeserialized<Customer>()
                     connections.forEach {
-                        it.session.send(textWithUsername)
+                        it.session.send("A customer with name ${customer.name} is received by the server.")
                     }
                 }
             } catch (e: Throwable) {
@@ -50,3 +49,7 @@ class Connection(val session: DefaultWebSocketSession) {
 
     val name = "user${lastId.getAndIncrement()}"
 }
+
+
+@Serializable
+data class Customer(val name: String, val email: String)
